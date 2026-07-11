@@ -2,13 +2,13 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 type AsteroidProps = {
-  asteroidY: number;
   asteroidX: number;
+  asteroidY: number;
 };
 
 export default function Asteroid({
-  asteroidY,
   asteroidX,
+  asteroidY,
 }: AsteroidProps) {
   return (
     <View
@@ -31,6 +31,8 @@ const styles = StyleSheet.create({
   container: {
     position: "absolute",
     top: 0,
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   asteroid: {

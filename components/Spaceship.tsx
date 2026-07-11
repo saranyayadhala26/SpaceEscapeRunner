@@ -22,6 +22,8 @@ export default function Spaceship({ shipX }: SpaceshipProps) {
 
 const styles = StyleSheet.create({
   container: {
+    position: "absolute",
+    bottom: 140,
     justifyContent: "center",
     alignItems: "center",
   },

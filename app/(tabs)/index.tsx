@@ -8,33 +8,44 @@ import {
 
 import Asteroid from "../../components/Asteroid";
 import Controls from "../../components/Controls";
+import GameOver from "../../components/GameOver";
 import ScoreBoard from "../../components/ScoreBoard";
 import Spaceship from "../../components/Spaceship";
 
 export default function HomeScreen() {
   const [gameStarted, setGameStarted] = useState(false);
+  const [gameOver, setGameOver] = useState(false);
 
   const [shipX, setShipX] = useState(0);
 
-  const [asteroidX] = useState(0);
+  const [asteroidX, setAsteroidX] = useState(0);
   const [asteroidY, setAsteroidY] = useState(0);
 
-  const [score] = useState(0);
+  const [score, setScore] = useState(0);
 
   const moveLeft = () => {
-    setShipX((prev) => Math.max(prev - 20, -120));
+    if (!gameOver) {
+      setShipX((prev) => Math.max(prev - 20, -120));
+    }
   };
 
   const moveRight = () => {
-    setShipX((prev) => Math.min(prev + 20, 120));
+    if (!gameOver) {
+      setShipX((prev) => Math.min(prev + 20, 120));
+    }
   };
 
+  // Falling asteroid
   useEffect(() => {
-    if (!gameStarted) return;
+    if (!gameStarted || gameOver) return;
 
     const interval = setInterval(() => {
       setAsteroidY((prev) => {
-        if (prev > 550) {
+        if (prev > 650) {
+          setScore((s) => s + 1);
+
+          setAsteroidX(Math.floor(Math.random() * 241) - 120);
+
           return 0;
         }
 
@@ -43,7 +54,33 @@ export default function HomeScreen() {
     }, 40);
 
     return () => clearInterval(interval);
-  }, [gameStarted]);
+  }, [gameStarted, gameOver]);
+
+  // Collision Detection
+  useEffect(() => {
+    if (!gameStarted || gameOver) return;
+
+    const verticalHit =
+      asteroidY >= 520 && asteroidY <= 620;
+
+    const horizontalHit =
+      Math.abs(shipX - asteroidX) < 25;
+
+    if (verticalHit && horizontalHit) {
+      setGameOver(true);
+    }
+  }, [asteroidY, asteroidX, shipX, gameStarted, gameOver]);
+
+  const restartGame = () => {
+    setGameOver(false);
+
+    setShipX(0);
+
+    setAsteroidX(0);
+    setAsteroidY(0);
+
+    setScore(0);
+  };
 
   return (
     <View style={styles.container}>
@@ -54,7 +91,7 @@ export default function HomeScreen() {
           </Text>
 
           <Text style={styles.scoreText}>
-            Current Score: 0
+            Current Score : 0
           </Text>
 
           <TouchableOpacity
@@ -81,6 +118,13 @@ export default function HomeScreen() {
             moveLeft={moveLeft}
             moveRight={moveRight}
           />
+
+          {gameOver && (
+            <GameOver
+              score={score}
+              onRestart={restartGame}
+            />
+          )}
         </View>
       )}
     </View>
