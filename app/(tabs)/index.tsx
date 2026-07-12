@@ -3,12 +3,15 @@ import { StyleSheet, Text, TouchableOpacity, View, } from "react-native";
 import Asteroid from "../../components/Asteroid";
 import Controls from "../../components/Controls";
 import Difficulty from "../../components/Difficulty";
+import Explosion from "../../components/Explosion";
 import { BOTTOM_LIMIT, getAsteroidSpeed, getRandomAsteroidX, isCollision, MAX_X, MIN_X, RESET_Y, } from "../../components/GameEngine";
 import GameOver from "../../components/GameOver";
+import Heart from "../../components/Heart";
 import Lives from "../../components/Lives";
 import ScoreBoard from "../../components/ScoreBoard";
 import Spaceship from "../../components/Spaceship";
 import StarBackground from "../../components/StarBackground";
+
 export default function HomeScreen() {
   const [gameStarted, setGameStarted] = useState(false);
   const [gameOver, setGameOver] = useState(false);
@@ -19,10 +22,18 @@ export default function HomeScreen() {
   const [asteroidY, setAsteroidY] = useState(0);
   const [asteroid2X, setAsteroid2X] = useState(getRandomAsteroidX());
   const [asteroid2Y, setAsteroid2Y] = useState(-300);
+  const [heartX, setHeartX] = useState(getRandomAsteroidX());
+  const [heartY, setHeartY] = useState(-800);
+  const [heartVisible, setHeartVisible] = useState(false);
 
   const [score, setScore] = useState(0);
+  const [highScore, setHighScore] = useState(0);
   const [lives, setLives] = useState(3);
+const [showExplosion, setShowExplosion] = useState(false);
 
+const [explosionX, setExplosionX] = useState(0);
+
+const [explosionY, setExplosionY] = useState(0);
   // Asteroid speed increases with score
   const asteroidSpeed = getAsteroidSpeed(score);
 
@@ -46,7 +57,15 @@ export default function HomeScreen() {
     const interval = setInterval(() => {
       setAsteroidY((prev) => {
         if (prev > BOTTOM_LIMIT) {
-  setScore((s) => s + 1);
+  setScore((prevScore) => {
+  const newScore = prevScore + 1;
+
+  setHighScore((prevHigh) =>
+    newScore > prevHigh ? newScore : prevHigh
+  );
+
+  return newScore;
+});
 
   setAsteroidX(getRandomAsteroidX());
 
@@ -66,8 +85,15 @@ export default function HomeScreen() {
   const interval = setInterval(() => {
     setAsteroid2Y((prev) => {
       if (prev > BOTTOM_LIMIT) {
+setScore((prevScore) => {
+  const newScore = prevScore + 1;
 
-        setScore((s) => s + 1);
+  setHighScore((prevHigh) =>
+    newScore > prevHigh ? newScore : prevHigh
+  );
+
+  return newScore;
+});
 
         setAsteroid2X(getRandomAsteroidX());
 
@@ -81,8 +107,77 @@ export default function HomeScreen() {
   return () => clearInterval(interval);
 
 }, [gameStarted, gameOver, asteroidSpeed]);
+// Heart Spawn
+useEffect(() => {
+  if (!gameStarted || gameOver) return;
 
+  const timer = setInterval(() => {
+    console.log("Heart Spawned ❤️");
+
+    setHeartVisible(true);
+    setHeartX(getRandomAsteroidX());
+    setHeartY(-300);
+
+  }, 12000);
+
+  return () => clearInterval(timer);
+
+}, [gameStarted, gameOver]);
+useEffect(() => {
+  if (!heartVisible) return;
+
+  const interval = setInterval(() => {
+
+    setHeartY((prev) => {
+
+    if (prev > BOTTOM_LIMIT) {
+    setHeartVisible(false);
+    setHeartX(getRandomAsteroidX());
+    return -300;
+}
+      return prev + 6;
+
+    });
+
+  }, 40);
+
+  return () => clearInterval(interval);
+
+}, [heartVisible]);// ===========================
+// HEART SYSTEM
+useEffect(() => {
+  if (!heartVisible || gameOver) return;
+
+  const verticalHit =
+    heartY >= 520 && heartY <= 620;
+
+  const horizontalHit =
+    Math.abs(shipX - heartX) < 30;
+
+  if (verticalHit && horizontalHit) {
+
+    if (lives < 3) {
+      setLives((prev) => prev + 1);
+    }
+
+    setHeartVisible(false);
+    setHeartY(-300);
+    setHeartX(getRandomAsteroidX());
+  }
+
+}, [
+  heartX,
+  heartY,
+  shipX,
+  heartVisible,
+  lives,
+  gameOver,
+]);
+
+// ===========================
 // Collision Detection
+
+
 useEffect(() => {
   if (!gameStarted || gameOver) return;
 
@@ -99,6 +194,21 @@ const hitAsteroid2 = isCollision(
 );
 
 if (hitAsteroid1 || hitAsteroid2) {
+  if (hitAsteroid1) {
+  setExplosionX(asteroidX);
+  setExplosionY(asteroidY);
+}
+
+if (hitAsteroid2) {
+  setExplosionX(asteroid2X);
+  setExplosionY(asteroid2Y);
+}
+
+setShowExplosion(true);
+
+setTimeout(() => {
+  setShowExplosion(false);
+}, 500);
 
   if (lives > 1) {
     setLives((prev) => prev - 1);
@@ -178,11 +288,25 @@ const restartGame = () => {
       ) : (
         <View style={styles.gameContainer}>
           <View style={{ alignItems: "center" }}>
-  <ScoreBoard score={score} />
-  <Lives lives={lives} />
-  <Difficulty score={score} />
-</View>
 
+  <Text
+    style={{
+      color: "#FFD54F",
+      fontSize: 20,
+      fontWeight: "bold",
+      marginBottom: 6,
+    }}
+  >
+    🏆 High Score : {highScore}
+  </Text>
+
+  <ScoreBoard score={score} />
+
+  <Lives lives={lives} />
+
+  <Difficulty score={score} />
+
+</View>
           <Asteroid
             asteroidX={asteroidX}
             asteroidY={asteroidY}
@@ -191,7 +315,17 @@ const restartGame = () => {
           asteroidX={asteroid2X}
           asteroidY={asteroid2Y}
           />
-
+          {heartVisible && (
+  <Heart
+    x={heartX}
+    y={heartY}
+  />
+)}
+          <Explosion
+  visible={showExplosion}
+  x={explosionX}
+  y={explosionY}
+/>
           <Spaceship shipX={shipX} />
 
           <Controls
