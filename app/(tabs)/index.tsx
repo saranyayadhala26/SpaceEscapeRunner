@@ -9,6 +9,7 @@ import GameOver from "../../components/GameOver";
 import Heart from "../../components/Heart";
 import Lives from "../../components/Lives";
 import ScoreBoard from "../../components/ScoreBoard";
+import Shield from "../../components/Shield";
 import Spaceship from "../../components/Spaceship";
 import StarBackground from "../../components/StarBackground";
 
@@ -25,13 +26,18 @@ export default function HomeScreen() {
   const [heartX, setHeartX] = useState(getRandomAsteroidX());
   const [heartY, setHeartY] = useState(-800);
   const [heartVisible, setHeartVisible] = useState(false);
+  const [shieldX, setShieldX] = useState(getRandomAsteroidX());
 
+const [shieldY, setShieldY] = useState(-1200);
+
+const [shieldVisible, setShieldVisible] = useState(false);
+
+const [shieldActive, setShieldActive] = useState(false);
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
   const [lives, setLives] = useState(3);
-const [showExplosion, setShowExplosion] = useState(false);
-
-const [explosionX, setExplosionX] = useState(0);
+  const [showExplosion, setShowExplosion] = useState(false);
+  const [explosionX, setExplosionX] = useState(0);
 
 const [explosionY, setExplosionY] = useState(0);
   // Asteroid speed increases with score
@@ -107,6 +113,7 @@ setScore((prevScore) => {
   return () => clearInterval(interval);
 
 }, [gameStarted, gameOver, asteroidSpeed]);
+
 // Heart Spawn
 useEffect(() => {
   if (!gameStarted || gameOver) return;
@@ -175,11 +182,106 @@ useEffect(() => {
 ]);
 
 // ===========================
+// ===========================
+// SHIELD SYSTEM
+// ===========================
+
+// ===========================
+// SHIELD SPAWN
+// ===========================
+
+useEffect(() => {
+  if (!gameStarted || gameOver) return;
+
+  const timer = setInterval(() => {
+    setShieldVisible(true);
+    setShieldX(getRandomAsteroidX());
+    setShieldY(-500);
+  }, 20000);
+
+  return () => clearInterval(timer);
+
+}, [gameStarted, gameOver]);
+// ===========================
+// SHIELD FALLING
+// ===========================
+
+useEffect(() => {
+  if (!shieldVisible) return;
+
+  const interval = setInterval(() => {
+    setShieldY((prev) => {
+      if (prev > BOTTOM_LIMIT) {
+        setShieldVisible(false);
+        setShieldX(getRandomAsteroidX());
+        return -500;
+      }
+
+      return prev + 5;
+    });
+  }, 40);
+
+  return () => clearInterval(interval);
+
+}, [shieldVisible]);
+
+// ===========================
+// SHIELD COLLECTION
+// ===========================
+
+useEffect(() => {
+  if (!shieldVisible || gameOver) return;
+
+  const verticalHit =
+    shieldY >= 520 && shieldY <= 620;
+
+  const horizontalHit =
+    Math.abs(shipX - shieldX) < 30;
+
+  if (verticalHit && horizontalHit) {
+
+    // Activate Shield
+    setShieldActive(true);
+
+    // Remove Shield
+    setShieldVisible(false);
+    setShieldY(-500);
+    setShieldX(getRandomAsteroidX());
+
+  }
+
+}, [
+  shieldX,
+  shieldY,
+  shipX,
+  shieldVisible,
+  gameOver,
+]);
+
+// ===========================
+// SHIELD TIMER
+// ===========================
+
+useEffect(() => {
+
+  if (!shieldActive) return;
+
+  const timer = setTimeout(() => {
+
+    setShieldActive(false);
+
+  }, 5000);
+
+  return () => clearTimeout(timer);
+
+}, [shieldActive]);
+
 // Collision Detection
 
 
 useEffect(() => {
   if (!gameStarted || gameOver) return;
+  if (shieldActive) return;
 
   const hitAsteroid1 = isCollision(
   asteroidX,
@@ -302,9 +404,22 @@ const restartGame = () => {
 
   <ScoreBoard score={score} />
 
-  <Lives lives={lives} />
+<Lives lives={lives} />
 
-  <Difficulty score={score} />
+<Difficulty score={score} />
+
+{shieldActive && (
+  <Text
+    style={{
+      color: "#4FC3F7",
+      fontWeight: "bold",
+      fontSize: 18,
+      marginTop: 5,
+    }}
+  >
+    🛡️ Shield Active
+  </Text>
+)}
 
 </View>
           <Asteroid
@@ -321,7 +436,13 @@ const restartGame = () => {
     y={heartY}
   />
 )}
-          <Explosion
+{shieldVisible && (
+  <Shield
+    x={shieldX}
+    y={shieldY}
+  />
+)}
+<Explosion
   visible={showExplosion}
   x={explosionX}
   y={explosionY}
