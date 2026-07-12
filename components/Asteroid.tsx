@@ -31,8 +31,6 @@ const styles = StyleSheet.create({
   container: {
     position: "absolute",
     top: 0,
-    justifyContent: "center",
-    alignItems: "center",
   },
 
   asteroid: {

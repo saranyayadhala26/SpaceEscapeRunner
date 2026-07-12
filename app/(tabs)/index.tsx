@@ -9,8 +9,6 @@ import Lives from "../../components/Lives";
 import ScoreBoard from "../../components/ScoreBoard";
 import Spaceship from "../../components/Spaceship";
 import StarBackground from "../../components/StarBackground";
-
-
 export default function HomeScreen() {
   const [gameStarted, setGameStarted] = useState(false);
   const [gameOver, setGameOver] = useState(false);
@@ -19,6 +17,8 @@ export default function HomeScreen() {
 
   const [asteroidX, setAsteroidX] = useState(0);
   const [asteroidY, setAsteroidY] = useState(0);
+  const [asteroid2X, setAsteroid2X] = useState(getRandomAsteroidX());
+  const [asteroid2Y, setAsteroid2Y] = useState(-300);
 
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
@@ -39,7 +39,8 @@ export default function HomeScreen() {
   };
 
   // Falling asteroid
-  useEffect(() => {
+  useEffect(() => 
+    {
     if (!gameStarted || gameOver) return;
 
     const interval = setInterval(() => {
@@ -59,30 +60,70 @@ export default function HomeScreen() {
     return () => clearInterval(interval);
   }, [gameStarted, gameOver, asteroidSpeed]);
 
-  // Collision Detection
+  useEffect(() => {
+  if (!gameStarted || gameOver) return;
+
+  const interval = setInterval(() => {
+    setAsteroid2Y((prev) => {
+      if (prev > BOTTOM_LIMIT) {
+
+        setScore((s) => s + 1);
+
+        setAsteroid2X(getRandomAsteroidX());
+
+        return -300;
+      }
+
+      return prev + asteroidSpeed;
+    });
+  }, 40);
+
+  return () => clearInterval(interval);
+
+}, [gameStarted, gameOver, asteroidSpeed]);
+
 // Collision Detection
 useEffect(() => {
   if (!gameStarted || gameOver) return;
 
-  if (isCollision(asteroidX, asteroidY, shipX)) {
+  const hitAsteroid1 = isCollision(
+  asteroidX,
+  asteroidY,
+  shipX
+);
 
-    if (lives > 1) {
-      setLives((prev) => prev - 1);
+const hitAsteroid2 = isCollision(
+  asteroid2X,
+  asteroid2Y,
+  shipX
+);
 
-      // Respawn asteroid
+if (hitAsteroid1 || hitAsteroid2) {
+
+  if (lives > 1) {
+    setLives((prev) => prev - 1);
+
+    if (hitAsteroid1) {
       setAsteroidY(RESET_Y);
       setAsteroidX(getRandomAsteroidX());
-
-    } else {
-      setLives(0);
-      setGameOver(true);
     }
 
+    if (hitAsteroid2) {
+      setAsteroid2Y(-300);
+      setAsteroid2X(getRandomAsteroidX());
+    }
+
+  } else {
+    setLives(0);
+    setGameOver(true);
   }
+}
 
 }, [
   asteroidY,
   asteroidX,
+  asteroid2Y,
+  asteroid2X,
   shipX,
   lives,
   gameStarted,
@@ -94,15 +135,20 @@ const restartGame = () => {
 
   setShipX(0);
 
+  // First asteroid
+  setAsteroidX(getRandomAsteroidX());
   setAsteroidY(RESET_Y);
 
-  setAsteroidX(getRandomAsteroidX());
+  // Second asteroid
+  setAsteroid2X(getRandomAsteroidX());
+  setAsteroid2Y(-300);
 
+  // Reset score
   setScore(0);
 
+  // Reset lives
   setLives(3);
 };
-
   return (
     
     <View style={styles.container}>
@@ -134,12 +180,16 @@ const restartGame = () => {
           <View style={{ alignItems: "center" }}>
   <ScoreBoard score={score} />
   <Lives lives={lives} />
-   <Difficulty score={score} />
+  <Difficulty score={score} />
 </View>
 
           <Asteroid
             asteroidX={asteroidX}
             asteroidY={asteroidY}
+          />
+          <Asteroid
+          asteroidX={asteroid2X}
+          asteroidY={asteroid2Y}
           />
 
           <Spaceship shipX={shipX} />

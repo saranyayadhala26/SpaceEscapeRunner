@@ -28,3 +28,9 @@ export function isCollision(
 
   return verticalHit && horizontalHit;
 }
+export function createAsteroid() {
+  return {
+    x: getRandomAsteroidX(),
+    y: RESET_Y,
+  };
+}
